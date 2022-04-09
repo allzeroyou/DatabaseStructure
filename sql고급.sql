@@ -12,7 +12,9 @@ SELECT ROUND(4.875, 1);
 
 -- 3. 숫자함수의 연산: 숫자 함수는 입력 값으로 직접 숫자를 입력할 수 있지만 열 이름을 사용할 수도 있다. 또한 여러 함수를 복합적으로 사용 가능.
 -- 고객별 평균 주문 금액을 백원 단위로 반올림한 값을 구하시오.
-
+SELECT Customer.name, ROUND(SUM(saleprice)/COUNT(*), -2) FROM Customer, Orders
+WHERE customer.custid=orders.custid
+GROUP BY Customer.name;
 
 -- 문자함수: CHAR, VARCHAR의 데이터 타입을 대상으로 단일 문자나 문자열을 가공한 결과를 반환
 -- REPLACE 함수: 문자열을 치환하는 함수
@@ -30,6 +32,7 @@ WHERE publisher = '굿스포츠';
 -- SUBSTR 함수: 문자열 중 특정 위치에서 시작해 지정한 길이 만큼의 문자열 반환
 -- 마당서점의 고객 중에서 같은 성을 가진 사람이 몇명이나 되는지 성별 인원수를 구하시오.
 
+ 
 -- 날짜, 시간 함수
 -- 날짜형 데이터는 '-'와 '+'을 사용해 원하는 날짜로부터 이전(-)과 이후(+) 계산 가능
 -- 예를 들어 날짜형 데이터 mydate 값이 '2019년 7월 1일'이라면 5일 전은 'INTERVAL -5 DAY', 5일 후는 'INTERVAL 5 DAY'이다.
@@ -95,12 +98,29 @@ GROUP BY cs.name;
 -- nested query는 WHERE 절에서 사용되는 부속질의이다. 보통 데이터를 선택하는 조건 혹은 술어와 같이 사용되는 where 절이라서 중첩질의를 술어 부속질의라고도 부른다.
 -- 중첩질의는 주질의에 사용된 자료 집합의 조건을 WHERE 절에 서술한다. 
 -- 주질의의 자료 집합에서 한 행씩 가져와 부속질의를 수행, 연산 결과에 따라 WHERE 절의 조건이 참인지 거짓인지 확인해 참일 경우 주질의의 해당 행을 출력.
-
 -- 질의) 평균 주문 금액 이하의 주문에 대한 주문번호와 금액을 보이시오.
 SELECT orderid, saleprice FROM Orders WHERE saleprice <= (SELECT AVG(saleprice) FROM Orders); 
 
 -- 질의) 각 고객의 평균 주문금액보다 큰 금액의 주문 내역에 대해 주문번호, 고객번호, 금액 보이시오.
 SELECT orderid, custid, saleprice FROM Orders WHERE saleprice > (SELECT AVG(saleprice) FROM Orders);
 
-
-
+-- IN, NOT IN
+-- IN 연산자는 주질의의 속성값이 부속질의에서 제공한 결과 집합에 있는지 확인하는 역할
+-- IN 연산자에서 사용 가능한 부속질의는 결과로 다중 행, 열을 반환 가능
+-- 주질의는 WHERE 절에 사용되는 속성 값을 부속질의의 결과 집합과 비교해 하나라도 있으면 참이 된다.
+-- NOT IN은 이와 반대로 값이 존재하지 않으면 참이 된다.
+-- 질의) 대한민국에 거주하는 고객에게 판매한 도서의 총 판매액은?
+SELECT SUM(saleprice) FROM Orders WHERE custid IN (SELECT custid FROM Customer WHERE address LIKE "%대한민국%");
+-- ALL, SOME(ANY)
+-- ALL은 모든, SOME은 어떠한(최소한 하나라도)라는 의미를 가짐.
+-- ANY는 SOME과 동일한 기능. 
+-- 예를 들어 '금액 > SOME(SELECT 단가 FROM 상품)'이라고 하면 금액이 상품 테이블에 있는 어떠한(SOME) 단가보다 큰(>) 경우 참이 되어 해당 행의 데이터 출력
+-- ALL의 경우 부속질의의 결과 집합 전체를 대상으로 하므로 결과 집합의 최댓값(MAX)과 같고 SOME은 부속질의 결과 집합 중 어떠한 값을 의미하므로 최솟값(MIN)과 같다.
+-- 질의) 3번 고객이 주문한 도서의 최고 금액보다 더 비싼 도서를 구입한 주문의 주문번호와 판매금액?
+SELECT orderid, saleprice FROM Orders WHERE saleprice > ALL (SELECT saleprice FROM Orders WHERE custid='3'); 
+-- EXISTS, NOT EXISTS
+-- 데이터의 존재유무 확인하는 연산자.
+-- EXIST 연산자는 다른 연산자와 달리 왼쪽에 스칼라 값, 열을 명시하지 않음 => 부속질의에 주질의의 열 이름이 제공되어야 함.
+-- 부속질의는 필요한 값이(조건을 만족하는 행) 발견되면 참 반환.
+-- 질의) EXISTS 연산자를 사용해 대한민국에 거주하는 고객에게 판매한 도서의 총 판매액?
+SELECT SUM(saleprice) FROM Orders WHERE EXISTS (SELECT * FROM Customer WHERE address LIKE "대한민국%" AND Customer.custid=Orders.custid);
