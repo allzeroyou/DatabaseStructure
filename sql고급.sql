@@ -124,3 +124,52 @@ SELECT orderid, saleprice FROM Orders WHERE saleprice > ALL (SELECT saleprice FR
 -- 부속질의는 필요한 값이(조건을 만족하는 행) 발견되면 참 반환.
 -- 질의) EXISTS 연산자를 사용해 대한민국에 거주하는 고객에게 판매한 도서의 총 판매액?
 SELECT SUM(saleprice) FROM Orders WHERE EXISTS (SELECT * FROM Customer WHERE address LIKE "대한민국%" AND Customer.custid=Orders.custid);
+-- view(뷰)
+-- 하나의 테이블을 합해 만든 가상의 테이블. 합하는 건 SELECT 문을 통해 얻은 최종 결과, 뷰는 이러한 결과를 가상의 테이블로 정의해 실제 테이블처럼 사용할 수 있게 만든 데베개체.
+
+-- 기본 문법
+-- CREATE VIEW 뷰 이름 [(열 이름 [,.. n])]
+-- AS SELECT 문
+
+-- Book 테이블에서 '축구'라는 문구가 포함된 자료만 보여주는 뷰를 만들자
+-- 뷰에 사용할 SELECT 문은?
+SELECT * FROM Book WHERE bookname LIKE '%축구%';
+
+CREATE VIEW vw_Book
+AS SELECT *
+FROM Book
+WHERE bookname LIKE '%축구%';
+
+-- 주소에 '대한민국'을 포함하는 고객들로 구성된 뷰를 만들고 조회. 뷰의 이름은 vw_Customer
+CREATE VIEW vw_Customer
+AS SELECT *
+FROM Customer
+WHERE address LIKE '대한민국%';
+
+SELECT * FROM vw_Customer;
+
+-- Orders 테이블에서 고객이름과 도서이름을 바로 확인할 수 있는 뷰를 생성, '김연아' 고객이 구입한 도서의 주문번호, 도서이름, 주문액?
+CREATE VIEW vw_Orders (orderid, custid, name, bookid, bookname, saleprice, orderdate)
+AS SELECT od.orderid, cs.custid, cs.name, b.bookid, b.bookname, od.saleprice, od.orderdate
+FROM Orders od, Customer cs, Book b
+WHERE od.custid=cs.custid AND od.bookid=b.bookid;
+
+SELECT orderid, bookname, saleprice
+FROM vw_Orders
+WHERE name='김연아';
+
+-- 뷰의 수정
+-- 위 질의에서 생성한 뷰 vw_Customer는 주소가 대한민국인 고객만 보여줌. 영국을 주소로 가진 고객으로 변경. phone 속성 포함 x
+CREATE OR REPLACE VIEW vw_Customer (custid, name, address)
+AS SELECT custid, name, address
+FROM Customer
+WHERE address LIKE '영국%';
+
+SELECT * FROM vw_Customer;
+
+-- 뷰의 삭제
+-- DROP VIEW 뷰이름
+
+-- 앞서 생성한 뷰 vw_Customer 삭제
+DROP VIEW vw_Customer;
+SELECT * FROM vw_Customer;
